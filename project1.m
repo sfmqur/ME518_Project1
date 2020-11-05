@@ -13,17 +13,21 @@ p1y = 17.5; %inches
 p2x = 4; %inches
 p2y = 16; %inches
 space = 18; %inches, sidelength of the containment square area
-memory_max = 1024; %MB, sets maximum memory ussage for the solution set. 
+
+%max number of solutions to be checked, default settings yields 1.5e9 possible solutions
+% my PC, gaming computer, quite fast checks 1.4e6 solutions per min
+num_solutions = 1000; %number of desired solutions possible solutions to be saved.  
+solutions_to_check = 10e6; 
 
 
 step = 1; %degree, step size of each iteration
 %part 1, max assumption of variables
-theta_max = 90; %degrees
+theta_max = 180; %degrees
 phi_max = 180; %degrees
 beta2_max = 180; %degrees
 
 %part 2, max assumption of variables
-sigma_max = 90; %degrees
+sigma_max = 180; %degrees
 gamma2_max = 180; %degrees
 psi_max = 180; %degrees
 
@@ -134,12 +138,14 @@ data_pointer = 1;
 % seem to be about 6.897127e3 rows / MB I set the max size of the array to
 % be about 1GB
 rows_mb = 6.897126969e3;
-size_max = floor(rows_mb * memory_max);
-solutions = zeros(size_max,19 ); %preallocate memory for solution matrix and it vastly improves runtime, i cut unused size down later
+
+solutions = zeros(num_solutions,19 ); %preallocate memory for solution matrix and it vastly improves runtime, i cut unused size down later
 min_solution = 15000* ones(1,19); %preallocate min solution
+possible_solutions = length(us_data(:,8)) * length(wz_data(:,8)); 
 
 for us = 1:length(us_data(:,8)) %tells up number of us solutions
     for wz = 1:length(wz_data(:,8)) %tells up number of wz solutions
+        solutions_checked = us*length(wz_data(:,8)) + wz; 
         %%%!!!! require that b1 must be +x (to the right) of a1 and that v1
         % and g1 are non zero
         % solution index comment on end of line
@@ -163,22 +169,28 @@ for us = 1:length(us_data(:,8)) %tells up number of us solutions
         v1 = sqrt((a1x - b1x)^2 + (a1y - b1y)^2);%18
         length_total = w+v1+u;%19
         
-        if data_pointer > size_max
+        temp = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1,length_total];
+        
+        if solutions_checked > solutions_to_check
            break; 
         end
         
         if b1x - a1x > 0 && g1 > 0 && v1 > 0
-            solutions(data_pointer, :) = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1,length_total];
-            data_pointer = data_pointer +1;
+            if data_pointer <= num_solutions %only save so many solutions
+                solutions(data_pointer, :) = temp;
+                data_pointer = data_pointer +1;
+            end
+            %will check all possible solutions for minimum. 
             if length_total < min_solution(1,19) %minimum length solution checking and tracking
-                min_solution = solutions(data_pointer-1, :);
+                min_solution = temp;
             end
         end
         
     end
-    if data_pointer > size_max
+    if solutions_checked > solutions_to_check
            break; 
     end
+    
 end
 
 %solution matrix size reduction
