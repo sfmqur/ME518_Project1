@@ -8,17 +8,17 @@
 tic
 clear;
 alpha2 = 5; %degrees
-p1x = 10; %inches
-p1y = 15; %inches
+p1x = 9; %inches
+p1y = 17.5; %inches
 p2x = 4; %inches
-p2y = 15; %inches
+p2y = 16; %inches
 space = 18; %inches, sidelength of the containment square area
 
 %max number of solutions to be checked, default settings yields 1.5e9 possible solutions
 %ERROR: if num_solutions is larger than your PC memory capacity the program
 % will through an error
 num_solutions = 20; %number of desired solutions possible solutions to be saved., if -1 it will equal solutions to check
-solutions_to_check = 1e7; % if value is -1, it checks all possible solutions
+solutions_to_check = 1e8; % if value is -1, it checks all possible solutions
 
 step = 1; %degree, step size of each iteration
 %part 1, max assumption of variables 180 default for all values
@@ -145,7 +145,7 @@ min_solution = 15000* ones(1,25); %preallocate min solution
  
 %in order to get varied solutions, a probablility factor is created and
 %check against a random probablility
-prob = num_solutions/solutions_to_check *1; %the integer is just a weight factor: ensures that the array is filled 
+prob = num_solutions/solutions_to_check; 
 
 %in order to get varied solutions, set step size to step across possible
 %wz/us solutions, so the whole solution set of 1e9 can be checked
@@ -191,7 +191,7 @@ for us = 1:dus:length(us_data(:,8)) %tells up number of us solutions
         temp = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1,length_total,theta,phi,beta2,sigma,psi,gamma2];
         
         if b1x - a1x > 0 && g1 > 0 && v1 > 0
-            if data_pointer <= num_solutions && rand <= prob %only save so many solutions
+            if data_pointer <= num_solutions && rand <= prob %only save so many solutions, the random number vs a probablility ensures a varied solution set
                 solutions(data_pointer, :) = temp;
                 data_pointer = data_pointer +1;
             end
