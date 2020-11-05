@@ -5,24 +5,25 @@
 %documentation should discuss the inputs and what they mean, include the
 %image from teh project guidelines.  Discuss the allowed values for the
 %inputs.  Discuss the output and how to interpret it.  
-
+tic
 clear;
 alpha2 = 5; %degrees
 p1x = 9; %inches
 p1y = 17.5; %inches
 p2x = 4; %inches
 p2y = 16; %inches
-
 space = 18; %inches, sidelength of the containment square area
-step = 1; %degree, step size of each iteration
+memory_max = 1024; %MB, sets maximum memory ussage for the solution set. 
 
+
+step = 1; %degree, step size of each iteration
 %part 1, max assumption of variables
-theta_max = 180; %degrees
+theta_max = 90; %degrees
 phi_max = 180; %degrees
 beta2_max = 180; %degrees
 
 %part 2, max assumption of variables
-sigma_max = 180; %degrees
+sigma_max = 90; %degrees
 gamma2_max = 180; %degrees
 psi_max = 180; %degrees
 
@@ -43,6 +44,8 @@ end
 
 %part 1 
 data_pointer = 1;
+wz_data = zeros(theta_max*beta2_max * phi_max, 8); %preallocate max size to improve runtime
+
 for theta = 0:step:theta_max %iterate of all values of theta, phi and beta2
    for phi = 0:step:phi_max
       for beta2 = 0:step:beta2_max
@@ -67,7 +70,8 @@ for theta = 0:step:theta_max %iterate of all values of theta, phi and beta2
           if a2x > 0 && a2x < space && a2y > 0 && a2y < space && w > 0 && z > 0
               if a1x > 0 && a1x < space && a1y > 0 && a1y < space
                  if otwoy > 0 && otwoy < space && otwox > 0 && otwox < space
-                     wz_data(data_pointer,:) = [w,z,a1x,a1y,a2x,a2y,otwox,otwoy]; % wz solutions array output
+                     temp = [w,z,a1x,a1y,a2x,a2y,otwox,otwoy]; % wz solutions array output
+                     wz_data(data_pointer,:) = temp; 
                      data_pointer = data_pointer +1;
                  end
               end
@@ -77,10 +81,15 @@ for theta = 0:step:theta_max %iterate of all values of theta, phi and beta2
    end
 end
 
+%wz_data solution size reduction
+wz_data = wz_data(1:(data_pointer-1), :);
+
 %part 2  !!!it is worth noting that if the max angular conditions are the
 %same for part 1 and part 2 the solutions generated will be the same, could
 %speed the program up if that is assumed to be true. and just combine 
 data_pointer = 1;
+us_data = zeros(sigma_max*gamma2_max*psi_max, 8);
+
 for sigma = 0:step:sigma_max
    for gamma2 = 0:step:gamma2_max
       for psi = 0:step:psi_max
@@ -105,7 +114,8 @@ for sigma = 0:step:sigma_max
           if b2x > 0 && b2x < space && b2y > 0 && b2y < space && u > 0 && s > 0
               if b1x > 0 && b1x < space && b1y > 0 && b1y < space
                  if ofourx > 0 && ofourx < space && ofoury > 0 && ofoury < space
-                     us_data(data_pointer,:) = [u,s,b1x,b1y,b2x,b2y,ofourx,ofoury]; %data file colums output
+                     temp = [u,s,b1x,b1y,b2x,b2y,ofourx,ofoury]; %data file colums output
+                     us_data(data_pointer,:) = temp;
                      data_pointer = data_pointer +1;
                  end
               end
@@ -115,15 +125,62 @@ for sigma = 0:step:sigma_max
    end
 end
 
+%us_data size reduction
+us_data = us_data(1:(data_pointer-1), :);
+
 %combonation of the two solution sets, need all criteria to be met
 data_pointer = 1;
+%set to max size allowd as 1.5B is too large and MATLAB complains
+% seem to be about 6.897127e3 rows / MB I set the max size of the array to
+% be about 1GB
+rows_mb = 6.897126969e3;
+size_max = floor(rows_mb * memory_max);
+solutions = zeros(size_max,19 ); %preallocate memory for solution matrix and it vastly improves runtime, i cut unused size down later
+min_solution = 15000* ones(1,19); %preallocate min solution
+
 for us = 1:length(us_data(:,8)) %tells up number of us solutions
     for wz = 1:length(wz_data(:,8)) %tells up number of wz solutions
         %%%!!!! require that b1 must be +x (to the right) of a1 and that v1
         % and g1 are non zero
-        g1 =  sqrt((us_data(us,7) - wz_data(wz,7))^2 + (us_data(us,8) - wz_data(wz,8))^2);
-        if us_data(us,3) - wz_data(wz,3) > 0 && g1 > 0
-            solutions(data_pointer, :,:) = [us_data,wz_data];
+        % solution index comment on end of line
+        w = wz_data(wz,1); %1
+        z = wz_data(wz,2);%2
+        u = us_data(us,1);%3
+        s = us_data(us,2);%4
+        otwox = wz_data(wz,7);%5
+        otwoy = wz_data(wz,8);%6
+        ofourx = us_data(us,7);%7
+        ofoury = us_data(us,8);%8
+        a1x = wz_data(wz,3);%9
+        a1y = wz_data(wz,4);%10
+        b1x = us_data(us,3);%11
+        b1y = us_data(us,4);%12
+        a2x = wz_data(wz,5);%13
+        a2y = wz_data(wz,6);%14
+        b2x = us_data(us,5);%15
+        b2y = us_data(us,6);%16
+        g1 =  sqrt((ofourx - otwox)^2 + (ofourx - otwox)^2);%17
+        v1 = sqrt((a1x - b1x)^2 + (a1y - b1y)^2);%18
+        length_total = w+v1+u;%19
+        
+        if data_pointer > size_max
+           break; 
         end
+        
+        if b1x - a1x > 0 && g1 > 0 && v1 > 0
+            solutions(data_pointer, :) = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1,length_total];
+            data_pointer = data_pointer +1;
+            if length_total < min_solution(1,19) %minimum length solution checking and tracking
+                min_solution = solutions(data_pointer-1, :);
+            end
+        end
+        
+    end
+    if data_pointer > size_max
+           break; 
     end
 end
+
+%solution matrix size reduction
+solutions = solutions(1:(data_pointer-1), :);
+toc
