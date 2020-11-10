@@ -17,7 +17,7 @@ space = 18; %inches, sidelength of the containment square area
 %max number of solutions to be checked, default settings yields 1.5e9 possible solutions
 %ERROR: if num_solutions is larger than your PC memory capacity the program
 % will through an error
-num_solutions = 1000; %number of desired solutions possible solutions to be saved., if -1 it will equal solutions to check
+num_solutions = 200; %number of desired solutions possible solutions to be saved., if -1 it will equal solutions to check
 solutions_to_check = 1e8; % if value is -1, it checks all possible solutions
 
 step = 1; %degree, step size of each iteration
