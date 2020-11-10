@@ -17,7 +17,7 @@ space = 18; %inches, sidelength of the containment square area
 %max number of solutions to be checked, default settings yields 1.5e9 possible solutions
 %ERROR: if num_solutions is larger than your PC memory capacity the program
 % will through an error
-num_solutions = 20; %number of desired solutions possible solutions to be saved., if -1 it will equal solutions to check
+num_solutions = 1000; %number of desired solutions possible solutions to be saved., if -1 it will equal solutions to check
 solutions_to_check = 1e8; % if value is -1, it checks all possible solutions
 
 step = 1; %degree, step size of each iteration
@@ -50,9 +50,9 @@ end
 data_pointer = 1;
 wz_data = zeros(theta_max*beta2_max * phi_max, 11); %preallocate max size to improve runtime
 
-for theta = 0:step:theta_max %iterate of all values of theta, phi and beta2
-   for phi = 0:step:phi_max
-      for beta2 = 0:step:beta2_max
+for theta = 1:step:theta_max %iterate of all values of theta, phi and beta2
+   for phi = 1:step:phi_max
+      for beta2 = 1:step:beta2_max
           a = cosd(theta) * (cosd(beta2) - 1)+ sind(theta) * sind(beta2); %equations from notes on generation
           b = cosd(phi) * (cosd(alpha2) - 1) + sind(phi) * sind(alpha2);
           c = p21*cosd(delta2);
@@ -96,7 +96,7 @@ us_data = zeros(sigma_max*gamma2_max*psi_max, 11);
 
 for sigma = 0:step:sigma_max
    for gamma2 = 0:step:gamma2_max
-      for psi = 0:step:psi_max
+      for psi = 1:step:psi_max
           a = cosd(sigma) * (cosd(gamma2) - 1)+ sind(sigma) * sind(gamma2);
           b = cosd(psi) * (cosd(alpha2) - 1) + sind(psi) * sind(alpha2);
           c = p21*cosd(delta2);
@@ -118,7 +118,7 @@ for sigma = 0:step:sigma_max
           if b2x > 0 && b2x < space && b2y > 0 && b2y < space && u > 0 && s > 0
               if b1x > 0 && b1x < space && b1y > 0 && b1y < space
                  if ofourx > 0 && ofourx < space && ofoury > 0 && ofoury < space
-                     temp = [u,s,b1x,b1y,b2x,b2y,ofourx,ofoury,sigma,gamma2,psi]; %data file colums output
+                     temp = [u,s,b1x,b1y,b2x,b2y,ofourx,ofoury,sigma,psi,gamma2]; %data file colums output
                      us_data(data_pointer,:) = temp;
                      data_pointer = data_pointer +1;
                  end
@@ -179,19 +179,25 @@ for us = 1:dus:length(us_data(:,8)) %tells up number of us solutions
         b2x = us_data(us,5);%15
         b2y = us_data(us,6);%16
         g1 =  sqrt((ofourx - otwox)^2 + (ofourx - otwox)^2);%17
-        v1 = sqrt((a1x - b1x)^2 + (a1y - b1y)^2);%18
-        length_total = w+v1+u;%19
+        v1_a = sqrt((a1x - b1x)^2 + (a1y - b1y)^2);%18
+        v1_b = sqrt((a2x - b2x)^2 + (a2y - b2y)^2);
+        length_total = w+v1_a+u;%19
         theta = wz_data(wz,9);%20
         phi = wz_data(wz,10);%21
         beta2 = wz_data(wz,11);%22
         sigma = us_data(us,9);%23
         psi = us_data(us,10);%24
-        gamma2 = us_data(us,11);%25
+        gamma2 = us_data(us,11);%23
+        s1_vecx = p1x-b1x;
+        s1_vecy = p1y-b1y;
+        v1_vecx = a1x-b1x;
+        v1_vecy = a1y-b1y;
+        dot_product = (s1_vecx  * v1_vecx + s1_vecy * v1_vecy)/(s * v1_a);
         
-        temp = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1,length_total,theta,phi,beta2,sigma,psi,gamma2];
+        temp = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1_a,length_total,theta,phi,beta2,sigma,psi,gamma2];
         
-        if b1x - a1x > 0 && g1 > 0 && v1 > 0
-            if data_pointer <= num_solutions && rand <= prob %only save so many solutions, the random number vs a probablility ensures a varied solution set
+        if b1x - a1x > 0 && g1 > 0 && v1_a > 0 && v1_a == v1_b && dot_product < 0.5
+            if data_pointer <= num_solutions % && rand <= prob %only save so many solutions, the random number vs a probablility ensures a varied solution set
                 solutions(data_pointer, :) = temp;
                 data_pointer = data_pointer +1;
             end
