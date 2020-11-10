@@ -24,12 +24,12 @@ step = 1; %degree, step size of each iteration
 %part 1, max assumption of variables 180 default for all values
 theta_max = 180; %degrees
 phi_max = 180; %degrees
-beta2_max = 180; %degrees
+beta2_max = 90; %degrees
 
 %part 2, max assumption of variables
 sigma_max = 180; %degrees
-gamma2_max = 180; %degrees
 psi_max = 180; %degrees
+gamma2_max = 90; %degrees
 
 p21 = sqrt((p2x-p1x)^2 + (p2y-p1y)^2); %magnitude of vector P21
 
@@ -53,8 +53,8 @@ wz_data = zeros(theta_max*beta2_max * phi_max, 11); %preallocate max size to imp
 for theta = 1:step:theta_max %iterate of all values of theta, phi and beta2
    for phi = 1:step:phi_max
       for beta2 = 1:step:beta2_max
-          a = cosd(theta) * (cosd(beta2) - 1)+ sind(theta) * sind(beta2); %equations from notes on generation
-          b = cosd(phi) * (cosd(alpha2) - 1) + sind(phi) * sind(alpha2);
+          a = cosd(theta) * (cosd(beta2) - 1) - sind(theta) * sind(beta2); %equations from notes on generation
+          b = cosd(phi) * (cosd(alpha2) - 1) - sind(phi) * sind(alpha2);
           c = p21*cosd(delta2);
           d = sind(theta)*(cosd(beta2) -1) + cosd(theta) * sind(beta2);
           e = sind(phi)*(cosd(alpha2)-1) + cosd(phi) * sind(alpha2);
@@ -94,11 +94,11 @@ wz_data = wz_data(1:(data_pointer-1), :);
 data_pointer = 1;
 us_data = zeros(sigma_max*gamma2_max*psi_max, 11);
 
-for sigma = 0:step:sigma_max
-   for gamma2 = 0:step:gamma2_max
+for sigma = 1:step:sigma_max
+   for gamma2 = 1:step:gamma2_max
       for psi = 1:step:psi_max
-          a = cosd(sigma) * (cosd(gamma2) - 1)+ sind(sigma) * sind(gamma2);
-          b = cosd(psi) * (cosd(alpha2) - 1) + sind(psi) * sind(alpha2);
+          a = cosd(sigma) * (cosd(gamma2) - 1)- sind(sigma) * sind(gamma2);
+          b = cosd(psi) * (cosd(alpha2) - 1) - sind(psi) * sind(alpha2);
           c = p21*cosd(delta2);
           d = sind(sigma)*(cosd(gamma2) -1) + cosd(sigma) * sind(gamma2);
           e = sind(psi)*(cosd(alpha2)-1) + cosd(psi) * sind(alpha2);
@@ -192,12 +192,11 @@ for us = 1:dus:length(us_data(:,8)) %tells up number of us solutions
         s1_vecy = p1y-b1y;
         v1_vecx = a1x-b1x;
         v1_vecy = a1y-b1y;
-        dot_product = (s1_vecx  * v1_vecx + s1_vecy * v1_vecy)/(s * v1_a);
         
         temp = [w,z,u,s,otwox,otwoy,ofourx,ofoury,a1x,a1y,b1x,b1y,a2x,a2y,b2x,b2y,g1,v1_a,length_total,theta,phi,beta2,sigma,psi,gamma2];
         
-        if b1x - a1x > 0 && g1 > 0 && v1_a > 0 && v1_a == v1_b && dot_product < 0.5
-            if data_pointer <= num_solutions % && rand <= prob %only save so many solutions, the random number vs a probablility ensures a varied solution set
+        if b1x - a1x > 0 && g1 > 0 && v1_a > 0 && v1_a == v1_b 
+            if data_pointer <= num_solutions  && rand <= prob %only save so many solutions, the random number vs a probablility ensures a varied solution set
                 solutions(data_pointer, :) = temp;
                 data_pointer = data_pointer +1;
             end
